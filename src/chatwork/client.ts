@@ -35,8 +35,8 @@ export class ChatworkClient {
     return this._rateLimits;
   }
 
-  constructor(apiToken?: string) {
-    this._apiToken = apiToken;
+  constructor(props: { apiToken: string }) {
+    this._apiToken = props.apiToken;
   }
 
   private getRequestHeaders() {
