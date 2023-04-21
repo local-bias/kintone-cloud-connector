@@ -1,0 +1,8 @@
+{
+  "name": "@konomi-app/kintone-cloud-connector",
+  "version": "0.1.0",
+  "main": "index.js",
+  "repository": "https://github.com/local-bias/kintone-cloud-connector.git",
+  "author": "adachi",
+  "license": "MIT"
+}
