@@ -16,37 +16,38 @@ export type WithRoomId<T> = T & {
   /** ルームID */
   roomId: number | string;
 };
+export type WithMessageId<T> = T & {
+  /** メッセージID */
+  messageId: number | string;
+};
+export type WithTaskId<T> = T & {
+  /** タスクID */
+  taskId: number | string;
+};
 
 const CHATWORK_URL = 'https://api.chatwork.com/v2';
 
-/**
- * Chatwork API V2
- */
 export class ChatworkClient {
-  private _rateLimits?: RateLimits;
-  private _apiToken?: string;
-  set apiToken(apiToken: string | undefined) {
-    this._apiToken = apiToken;
-  }
-  get apiToken() {
-    return this._apiToken || process?.env?.CHATWORK_API_TOKEN;
-  }
+  readonly #apiToken: string;
+  #rateLimits?: RateLimits;
+  #debug: boolean;
 
   /**
    * API制限情報
    * APIが呼び出されるとレスポンスヘッダの情報を基に更新される
    */
   get rateLimits() {
-    return this._rateLimits;
+    return this.#rateLimits;
   }
 
-  constructor(props: { apiToken: string }) {
-    this._apiToken = props.apiToken;
+  constructor(props: { apiToken: string; debug?: boolean }) {
+    this.#apiToken = props.apiToken;
+    this.#debug = props.debug || false;
   }
 
   private getRequestHeaders() {
     return {
-      'X-ChatWorkToken': this.apiToken,
+      'X-ChatWorkToken': this.#apiToken,
     };
   }
 
@@ -58,9 +59,9 @@ export class ChatworkClient {
 
   private saveRateLimits(headers: any) {
     const rateLimits = Object.entries(headers)
-      .filter(([key, value]) => key.startsWith('x-ratelimit'))
+      .filter(([key]) => key.startsWith('x-ratelimit'))
       .map(([key, value]) => [key, Number(value)]);
-    this._rateLimits = Object.fromEntries(rateLimits) as RateLimits;
+    this.#rateLimits = Object.fromEntries(rateLimits) as RateLimits;
   }
 
   private async api<T>(params: {
@@ -177,21 +178,21 @@ export class ChatworkClient {
    * 自分自身の情報を取得
    */
   async getMe() {
-    return await this.get<Types.GetMeResponse>({ endpointName: `me` });
+    return this.get<Types.GetMeResponse>({ endpointName: `me` });
   }
 
   /**
    * 自分の未読数、未読To数、未完了タスク数を返す
    */
   async getMyStatus() {
-    return await this.get<Types.GetMyStatusResponse>({ endpointName: 'my/status' });
+    return this.get<Types.GetMyStatusResponse>({ endpointName: 'my/status' });
   }
 
   /**
    * 自分のタスク一覧を取得する。(※100件まで取得可能。今後、より多くのデータを取得する為のページネーションの仕組みを提供予定)
    */
   async getMyTasks(params?: Types.GetMyTasksParam) {
-    return await this.get<Types.GetMyTasksResponse>({
+    return this.get<Types.GetMyTasksResponse>({
       endpointName: `my/tasks`,
       requestParams: params,
     });
@@ -201,21 +202,21 @@ export class ChatworkClient {
    * 自分のコンタクト一覧を取得
    */
   async getContacts() {
-    return await this.get<Types.GetContactsResponse>({ endpointName: 'contacts' });
+    return this.get<Types.GetContactsResponse>({ endpointName: 'contacts' });
   }
 
   /**
    * 自分のチャット一覧の取得
    */
   async getRooms() {
-    return await this.get<Types.GetRoomsResponse>({ endpointName: 'rooms' });
+    return this.get<Types.GetRoomsResponse>({ endpointName: 'rooms' });
   }
 
   /**
    * グループチャットを新規作成
    */
   async postRoom(params: Types.PostRoomParam) {
-    return await this.post<Types.PostRoomResponse>({
+    return this.post<Types.PostRoomResponse>({
       endpointName: `rooms`,
       requestParams: params,
     });
@@ -226,16 +227,16 @@ export class ChatworkClient {
    */
   async getRoom(params: WithRoomId<{}>) {
     const { roomId } = params;
-    return await this.get<Types.GetRoomResponse>({ endpointName: `rooms/${roomId}` });
+    return this.get<Types.GetRoomResponse>({ endpointName: `rooms/${roomId}` });
   }
 
   /**
    * チャットの名前、アイコンをアップデート
    */
-  async putRoom(params: WithRoomId<Types.PutRoomParam>) {
+  async updateRoom(params: WithRoomId<Types.PutRoomParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}`;
-    return await this.put<Types.PutRoomResponse>({ endpointName, requestParams });
+    return this.put<Types.PutRoomResponse>({ endpointName, requestParams });
   }
 
   /**
@@ -244,7 +245,7 @@ export class ChatworkClient {
   async deleteRoom(params: WithRoomId<Types.DeleteRoomParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}`;
-    return await this.delete<Types.DeleteRoomResponse>({ endpointName, requestParams });
+    return this.delete<Types.DeleteRoomResponse>({ endpointName, requestParams });
   }
 
   /**
@@ -253,16 +254,16 @@ export class ChatworkClient {
   async getRoomMembers(params: WithRoomId<{}>) {
     const { roomId } = params;
     const endpointName = `rooms/${roomId}/members`;
-    return await this.get<Types.GetRoomMembersResponse>({ endpointName });
+    return this.get<Types.GetRoomMembersResponse>({ endpointName });
   }
 
   /**
    * チャットのメンバーを一括変更
    */
-  async putRoomMembers(params: WithRoomId<Types.PutRoomMembersParam>) {
+  async updateRoomMembers(params: WithRoomId<Types.PutRoomMembersParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}/members`;
-    return await this.put<Types.PutRoomMembersResponse>({ endpointName, requestParams });
+    return this.put<Types.PutRoomMembersResponse>({ endpointName, requestParams });
   }
 
   /**
@@ -271,127 +272,113 @@ export class ChatworkClient {
   async getRoomMessages(params: WithRoomId<Types.GetRoomMessagesParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}/messages`;
-    return await this.get<Types.GetRoomMessagesResponse>({ endpointName, requestParams });
+    return this.get<Types.GetRoomMessagesResponse>({ endpointName, requestParams });
   }
 
   /**
    * チャットに新しいメッセージを追加
    */
-  async postRoomMessage(params: WithRoomId<Types.PostRoomMessageParam>) {
+  async sendRoomMessage(params: WithRoomId<Types.PostRoomMessageParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}/messages`;
-    return await this.post<Types.PostRoomMessageResponse>({ endpointName, requestParams });
+    return this.post<Types.PostRoomMessageResponse>({ endpointName, requestParams });
   }
 
   /**
    * メッセージを既読にする
    */
-  async putRoomMessagesRead(params: WithRoomId<Types.PutRoomMessagesReadParam>) {
+  async readRoomMessages(params: WithRoomId<Types.PutRoomMessagesReadParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}/messages/read`;
-    return await this.put<Types.PutRoomMessagesReadResponse>({ endpointName, requestParams });
+    return this.put<Types.PutRoomMessagesReadResponse>({ endpointName, requestParams });
   }
 
   /**
    * メッセージを未読にする
    */
-  async putRoomMessagesUnread(room_id: string | number, params: Types.PutRoomMessagesUnreadParam) {
-    return await this.put<Types.PutRoomMessagesUnreadResponse>({
-      endpointName: `/rooms/${room_id}/messages/unread`,
-      requestParams: params,
-    });
+  async unreadRoomMessages(params: WithRoomId<Types.PutRoomMessagesUnreadParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/messages/unread`;
+    return this.put<Types.PutRoomMessagesUnreadResponse>({ endpointName, requestParams });
   }
 
   /**
    * メッセージ情報を取得
    */
-  async getRoomMessage(room_id: string | number, message_id: string | number) {
-    return await this.get<Types.GetRoomMessageResponse>({
-      endpointName: `rooms/${room_id}/messages/${message_id}`,
-    });
+  async getRoomMessage(params: WithRoomId<WithMessageId<{}>>) {
+    const { roomId, messageId } = params;
+    const endpointName = `rooms/${roomId}/messages/${messageId}`;
+    return this.get<Types.GetRoomMessageResponse>({ endpointName });
   }
 
   /**
    * チャットのメッセージを更新する。
    */
-  async putRoomMessage(
-    room_id: string | number,
-    message_id: string | number,
-    params: Types.PutRoomMessageParam
-  ) {
-    return await this.put<Types.PutRoomMessageResponse>({
-      endpointName: `/rooms/${room_id}/messages/${message_id}`,
-      requestParams: params,
-    });
+  async updateRoomMessage(params: WithRoomId<WithMessageId<Types.PutRoomMessageParam>>) {
+    const { roomId, messageId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/messages/${messageId}`;
+    return this.put<Types.PutRoomMessageResponse>({ endpointName, requestParams });
   }
 
   /**
    * メッセージを削除
    */
-  async deleteRoomMessage(room_id: string | number, message_id: string | number) {
-    return await this.delete<Types.DeleteRoomMessageResponse>({
-      endpointName: `/rooms/${room_id}/messages/${message_id}`,
-    });
+  async deleteRoomMessage(params: WithRoomId<WithMessageId<{}>>) {
+    const { roomId, messageId } = params;
+    const endpointName = `rooms/${roomId}/messages/${messageId}`;
+    return this.delete<Types.DeleteRoomMessageResponse>({ endpointName });
   }
 
   /**
    * チャットのタスク一覧を取得 (※100件まで取得可能。今後、より多くのデータを取得する為のページネーションの仕組みを提供予定)
    */
-  async getRoomTasks(room_id: string | number, params?: Types.GetRoomTasksParam) {
-    return await this.get<Types.GetRoomTasksResponse>({
-      endpointName: `rooms/${room_id}/tasks`,
-      requestParams: params,
-    });
+  async getRoomTasks(params: WithRoomId<Types.GetRoomTasksParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/tasks`;
+    return this.get<Types.GetRoomTasksResponse>({ endpointName, requestParams });
   }
 
   /**
    * チャットに新しいタスクを追加
    */
-  async postRoomTask(room_id: string | number, params: Types.PostRoomTaskParam) {
-    return await this.post<Types.PostRoomTaskResponse>({
-      endpointName: `rooms/${room_id}/tasks`,
-      requestParams: params,
-    });
+  async sendRoomTask(params: WithRoomId<Types.PostRoomTaskParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/tasks`;
+    return this.post<Types.PostRoomTaskResponse>({ endpointName, requestParams });
   }
 
   /**
    * タスク情報を取得
    */
-  async getRoomTask(room_id: string | number, task_id: string | number) {
-    return await this.get<Types.GetRoomTaskResponse>({
-      endpointName: `rooms/${room_id}/tasks/${task_id}`,
-    });
+  async getRoomTask(params: WithRoomId<WithMessageId<{}>>) {
+    const { roomId, messageId } = params;
+    const endpointName = `rooms/${roomId}/tasks/${messageId}`;
+    return this.get<Types.GetRoomTaskResponse>({ endpointName });
   }
 
   /**
    * タスク完了状態を変更する
    */
-  async putRoomTaskStatus(
-    room_id: string | number,
-    task_id: string | number,
-    params: Types.PutRoomTaskStatusParam
-  ) {
-    return await this.put<Types.PutRoomTaskStatusResponse>({
-      endpointName: `/rooms/${room_id}/tasks/${task_id}/status`,
-      requestParams: params,
-    });
+  async updateRoomTaskStatus(params: WithRoomId<WithTaskId<Types.PutRoomTaskStatusParam>>) {
+    const { roomId, taskId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/tasks/${taskId}/status`;
+    return this.put<Types.PutRoomTaskStatusResponse>({ endpointName, requestParams });
   }
 
   /**
    * チャットのファイル一覧を取得 (※100件まで取得可能。今後、より多くのデータを取得する為のページネーションの仕組みを提供予定)
    */
-  async getRoomFiles(room_id: string | number, params?: Types.GetRoomFilesParam) {
-    return await this.get<Types.GetRoomFilesResponse>({
-      endpointName: `rooms/${room_id}/files`,
-      requestParams: params,
-    });
+  async getRoomFiles(params: WithRoomId<Types.GetRoomFilesParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/files`;
+    return this.get<Types.GetRoomFilesResponse>({ endpointName, requestParams });
   }
 
   // /**
   //  * チャットに新しいファイルをアップロード
   //  */
-  // async postRoomFile(room_id: string | number, params: Types.PostRoomFileParam) {
-  //   return await this.postFile<Types.PostRoomFileResponse>({
+  // async postRoomFile(params: WithRoomId<Types.PostRoomFileParam>) {
+  //   return this.postFile<Types.PostRoomFileResponse>({
   //     endpointName: `rooms/${room_id}/files`,
   //     requestParams: params,
   //   });
@@ -400,49 +387,42 @@ export class ChatworkClient {
   /**
    * ファイル情報を取得
    */
-  async getRoomFile(
-    room_id: string | number,
-    file_id: string | number,
-    params?: Types.GetRoomFileParam
-  ) {
-    return await this.get<Types.GetRoomFileResponse>({
-      endpointName: `rooms/${room_id}/files/${file_id}`,
-      requestParams: params,
-    });
+  async getRoomFile(params: WithRoomId<{ fileId: string | number } & Types.GetRoomFileParam>) {
+    const { roomId, fileId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/files/${fileId}`;
+    return this.get<Types.GetRoomFileResponse>({ endpointName, requestParams });
   }
 
   /**
    * 招待リンクを取得する
    */
   async getRoomLink(room_id: string | number) {
-    return await this.get<Types.GetRoomLinkResponse>({ endpointName: `rooms/${room_id}/link` });
+    return this.get<Types.GetRoomLinkResponse>({ endpointName: `rooms/${room_id}/link` });
   }
 
   /**
    * 招待リンクを作成する
    */
-  async postRoomLink(room_id: string | number, params?: Types.PostRoomLinkParam) {
-    return await this.post<Types.PostRoomLinkResponse>({
-      endpointName: `rooms/${room_id}/link`,
-      requestParams: params,
-    });
+  async postRoomLink(params: WithRoomId<Types.PostRoomLinkParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/link`;
+    return this.post<Types.PostRoomLinkResponse>({ endpointName, requestParams });
   }
 
   /**
    * 招待リンクの情報を変更する
    */
-  async putRoomLink(room_id: string | number, params?: Types.PutRoomLinkParam) {
-    return await this.put<Types.PutRoomLinkResponse>({
-      endpointName: `rooms/${room_id}/link`,
-      requestParams: params,
-    });
+  async putRoomLink(params: WithRoomId<Types.PutRoomLinkParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/link`;
+    return this.put<Types.PutRoomLinkResponse>({ endpointName, requestParams });
   }
 
   /**
    * 招待リンクを削除する
    */
   async deleteRoomLink(room_id: string | number) {
-    return await this.delete<Types.DeleteRoomLinkResponse>({
+    return this.delete<Types.DeleteRoomLinkResponse>({
       endpointName: `rooms/${room_id}/link`,
     });
   }
@@ -451,14 +431,14 @@ export class ChatworkClient {
    * 自分に対するコンタクト承認依頼一覧を取得する(※100件まで取得可能。今後、より多くのデータを取得する為のページネーションの仕組みを提供予定)
    */
   async getIncomingRequests() {
-    return await this.get<Types.GetIncomingRequestsResponse>({ endpointName: `incoming_requests` });
+    return this.get<Types.GetIncomingRequestsResponse>({ endpointName: `incoming_requests` });
   }
 
   /**
    * 自分に対するコンタクト承認依頼を承認する
    */
   async putIncomingRequest(request_id: string | number) {
-    return await this.put<Types.PutIncomingRequestResponse>({
+    return this.put<Types.PutIncomingRequestResponse>({
       endpointName: `incoming_requests/${request_id}`,
     });
   }
@@ -467,7 +447,7 @@ export class ChatworkClient {
    * 自分に対するコンタクト承認依頼をキャンセルする
    */
   async deleteIncomingRequest(request_id: string | number) {
-    return await this.delete<Types.DeleteIncomingRequestResponse>({
+    return this.delete<Types.DeleteIncomingRequestResponse>({
       endpointName: `/incoming_requests/${request_id}`,
     });
   }
