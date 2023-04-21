@@ -80,7 +80,7 @@ export class ChatworkClient {
       requestParams
     );
 
-    if (statusCode !== 200) {
+    if (Number(statusCode) !== 200) {
       throw new Error(`Chatwork API Error: ${statusCode} ${data}`, JSON.parse(data));
     }
     return { data: JSON.parse(data), headers };
