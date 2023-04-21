@@ -159,16 +159,16 @@ export type GetRoomFilesParam = {
   account_id?: number;
 };
 
-export type PostRoomFileParam = {
-  /** アップロードするファイル（上限：5MB） */
-  file: Buffer;
+// export type PostRoomFileParam = {
+//   /** アップロードするファイル（上限：5MB） */
+//   file: Buffer;
 
-  /** ファイルと一緒に投稿するメッセージの本文 */
-  message?: string;
+//   /** ファイルと一緒に投稿するメッセージの本文 */
+//   message?: string;
 
-  /** ファイル名 */
-  file_name: string;
-};
+//   /** ファイル名 */
+//   file_name: string;
+// };
 
 export type GetRoomFileParam = {
   /** ダウンロードする為のURLを生成するか */

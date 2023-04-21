@@ -3,8 +3,6 @@ import { stringify } from 'qs';
 
 import * as Types from './types';
 
-export const CHATWORK_URL = 'https://api.chatwork.com/v2';
-
 export type RateLimits = {
   /** 次に制限がリセットされる時間（Unix time） */
   'x-ratelimit-reset': number;
@@ -14,10 +12,12 @@ export type RateLimits = {
   'x-ratelimit-limit': number;
 };
 
+const CHATWORK_URL = 'https://api.chatwork.com/v2';
+
 /**
  * Chatwork API V2
  */
-export default class ChatworkApi {
+export class ChatworkClient {
   private _rateLimits?: RateLimits;
   private _apiToken?: string;
   set apiToken(apiToken: string | undefined) {
