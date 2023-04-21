@@ -4,5 +4,26 @@
   "main": "index.js",
   "repository": "https://github.com/local-bias/kintone-cloud-connector.git",
   "author": "adachi",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "yarn run build"
+  },
+  "dependencies": {
+    "qs": "^6.11.1"
+  },
+  "devDependencies": {
+    "@kintone/dts-gen": "^6.1.27",
+    "@types/qs": "^6.9.7",
+    "typescript": "^5.0.4"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "arrowParens": "always",
+    "singleQuote": true,
+    "jsxSingleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "endOfLine": "lf"
+  }
 }
