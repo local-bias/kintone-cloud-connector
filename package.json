@@ -1,7 +1,8 @@
 {
   "name": "@konomi-app/kintone-cloud-connector",
-  "version": "0.1.0",
-  "main": "index.js",
+  "version": "0.1.2",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.js",
   "repository": "https://github.com/local-bias/kintone-cloud-connector.git",
   "author": "adachi",
   "license": "MIT",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@kintone/dts-gen": "^6.1.27",
+    "@types/node": "^18.15.13",
     "@types/qs": "^6.9.7",
     "typescript": "^5.0.4"
   },
