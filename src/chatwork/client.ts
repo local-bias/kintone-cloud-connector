@@ -12,6 +12,11 @@ export type RateLimits = {
   'x-ratelimit-limit': number;
 };
 
+export type WithRoomId<T> = T & {
+  /** ルームID */
+  roomId: number | string;
+};
+
 const CHATWORK_URL = 'https://api.chatwork.com/v2';
 
 /**
@@ -68,7 +73,17 @@ export class ChatworkClient {
     const requestHeaders = this.getRequestHeaders();
     this.checkApiToken(requestHeaders);
 
-    return kintone.proxy(path, method, requestHeaders, requestParams);
+    const [data, statusCode, headers] = await kintone.proxy(
+      path,
+      method,
+      requestHeaders,
+      requestParams
+    );
+
+    if (statusCode !== 200) {
+      throw new Error(`Chatwork API Error: ${statusCode} ${data}`, JSON.parse(data));
+    }
+    return { data: JSON.parse(data), headers };
   }
 
   private async get<T>(params: { endpointName: string; requestParams?: any }): Promise<T> {
@@ -209,77 +224,72 @@ export class ChatworkClient {
   /**
    * チャットの名前、アイコン、種類(my/direct/group)を取得
    */
-  async getRoom(room_id: string | number) {
-    return await this.get<Types.GetRoomResponse>({ endpointName: `rooms/${room_id}` });
+  async getRoom(params: WithRoomId<{}>) {
+    const { roomId } = params;
+    return await this.get<Types.GetRoomResponse>({ endpointName: `rooms/${roomId}` });
   }
 
   /**
    * チャットの名前、アイコンをアップデート
    */
-  async putRoom(room_id: string | number, params?: Types.PutRoomParam) {
-    return await this.put<Types.PutRoomResponse>({
-      endpointName: `rooms/${room_id}`,
-      requestParams: params,
-    });
+  async putRoom(params: WithRoomId<Types.PutRoomParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}`;
+    return await this.put<Types.PutRoomResponse>({ endpointName, requestParams });
   }
 
   /**
    * グループチャットを退席/削除する
    */
-  async deleteRoom(room_id: string | number, params: Types.DeleteRoomParam) {
-    return await this.delete<Types.DeleteRoomResponse>({
-      endpointName: `rooms/${room_id}`,
-      requestParams: params,
-    });
+  async deleteRoom(params: WithRoomId<Types.DeleteRoomParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}`;
+    return await this.delete<Types.DeleteRoomResponse>({ endpointName, requestParams });
   }
 
   /**
    * チャットのメンバー一覧を取得
    */
-  async getRoomMembers(room_id: string | number) {
-    return await this.get<Types.GetRoomMembersResponse>({
-      endpointName: `rooms/${room_id}/members`,
-    });
+  async getRoomMembers(params: WithRoomId<{}>) {
+    const { roomId } = params;
+    const endpointName = `rooms/${roomId}/members`;
+    return await this.get<Types.GetRoomMembersResponse>({ endpointName });
   }
 
   /**
    * チャットのメンバーを一括変更
    */
-  async putRoomMembers(room_id: string | number, params: Types.PutRoomMembersParam) {
-    return await this.put<Types.PutRoomMembersResponse>({
-      endpointName: `rooms/${room_id}/members`,
-      requestParams: params,
-    });
+  async putRoomMembers(params: WithRoomId<Types.PutRoomMembersParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/members`;
+    return await this.put<Types.PutRoomMembersResponse>({ endpointName, requestParams });
   }
 
   /**
    * チャットのメッセージ一覧を取得。パラメータ未指定だと前回取得分からの差分のみを返します。(最大100件まで取得)
    */
-  async getRoomMessages(room_id: string | number, params?: Types.GetRoomMessagesParam) {
-    return await this.get<Types.GetRoomMessagesResponse>({
-      endpointName: `rooms/${room_id}/messages`,
-      requestParams: params,
-    });
+  async getRoomMessages(params: WithRoomId<Types.GetRoomMessagesParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/messages`;
+    return await this.get<Types.GetRoomMessagesResponse>({ endpointName, requestParams });
   }
 
   /**
    * チャットに新しいメッセージを追加
    */
-  async postRoomMessage(room_id: string | number, params: Types.PostRoomMessageParam) {
-    return await this.post<Types.PostRoomMessageResponse>({
-      endpointName: `rooms/${room_id}/messages`,
-      requestParams: params,
-    });
+  async postRoomMessage(params: WithRoomId<Types.PostRoomMessageParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/messages`;
+    return await this.post<Types.PostRoomMessageResponse>({ endpointName, requestParams });
   }
 
   /**
    * メッセージを既読にする
    */
-  async putRoomMessagesRead(room_id: string | number, params?: Types.PutRoomMessagesReadParam) {
-    return await this.put<Types.PutRoomMessagesReadResponse>({
-      endpointName: `/rooms/${room_id}/messages/read`,
-      requestParams: params,
-    });
+  async putRoomMessagesRead(params: WithRoomId<Types.PutRoomMessagesReadParam>) {
+    const { roomId, ...requestParams } = params;
+    const endpointName = `rooms/${roomId}/messages/read`;
+    return await this.put<Types.PutRoomMessagesReadResponse>({ endpointName, requestParams });
   }
 
   /**
