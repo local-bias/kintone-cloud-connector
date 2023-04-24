@@ -215,7 +215,7 @@ export class ChatworkClient {
   /**
    * グループチャットを新規作成
    */
-  async postRoom(params: Types.PostRoomParam) {
+  async createRoom(params: Types.PostRoomParam) {
     return this.post<Types.PostRoomResponse>({
       endpointName: `rooms`,
       requestParams: params,
@@ -403,7 +403,7 @@ export class ChatworkClient {
   /**
    * 招待リンクを作成する
    */
-  async postRoomLink(params: WithRoomId<Types.PostRoomLinkParam>) {
+  async createRoomLink(params: WithRoomId<Types.PostRoomLinkParam>) {
     const { roomId, ...requestParams } = params;
     const endpointName = `rooms/${roomId}/link`;
     return this.post<Types.PostRoomLinkResponse>({ endpointName, requestParams });
