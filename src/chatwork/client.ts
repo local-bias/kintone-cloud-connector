@@ -91,9 +91,9 @@ export class ChatworkClient {
     const { endpointName, requestParams = {} } = params;
 
     const { data, headers } = await this.api<T>({
-      endpointName,
+      endpointName: `${endpointName}?${stringify(requestParams)}`,
       method: 'GET',
-      requestParams,
+      requestParams: {},
     });
 
     this.saveRateLimits(headers);
